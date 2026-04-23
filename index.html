@@ -1,0 +1,2126 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Stretnutie s klientom</title>
+  <style>
+    :root {
+      --bg: #0d0d0d;
+      --surface: #181818;
+      --surface2: #212121;
+      --gold: #c9a96e;
+      --gold-light: #e8c98a;
+      --gold-dim: rgba(201,169,110,0.12);
+      --text: #e8e2d9;
+      --muted: #7a7a7a;
+      --border: #2e2e2e;
+      --green: #4caf72;
+      --red: #cf6679;
+      --r: 12px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding-bottom: 88px;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* ===== HEADER ===== */
+    header {
+      background: var(--surface);
+      border-bottom: 2px solid var(--gold);
+      padding: 18px 20px 14px;
+      position: sticky;
+      top: 0;
+      z-index: 200;
+    }
+    .header-top { display: flex; align-items: center; justify-content: space-between; }
+    header h1 { font-size: 17px; font-weight: 700; color: var(--gold); letter-spacing: .4px; }
+    #header-date { font-size: 12px; color: var(--muted); margin-top: 3px; }
+
+    .progress-wrap { margin-top: 12px; }
+    .progress-track {
+      background: var(--border);
+      border-radius: 20px;
+      height: 5px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--gold), var(--gold-light));
+      border-radius: 20px;
+      transition: width .4s ease;
+      width: 0%;
+    }
+    .progress-label {
+      font-size: 11px;
+      color: var(--muted);
+      text-align: right;
+      margin-top: 5px;
+    }
+
+    /* ===== MAIN ===== */
+    main { max-width: 780px; margin: 0 auto; padding: 14px 14px 0; }
+
+    /* ===== CARDS ===== */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      margin-bottom: 10px;
+      overflow: hidden;
+      transition: border-color .25s;
+    }
+    .card.is-done { border-color: var(--green); }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 18px;
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+      min-height: 64px;
+    }
+    .card-icon { font-size: 22px; min-width: 30px; text-align: center; }
+    .card-titles { flex: 1; }
+    .card-title { font-size: 15px; font-weight: 600; }
+    .card-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+    .done-btn {
+      width: 34px; height: 34px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      background: none;
+      color: var(--muted);
+      font-size: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: background .2s, border-color .2s, color .2s;
+    }
+    .done-btn.is-done { background: var(--green); border-color: var(--green); color: #fff; }
+
+    .chevron {
+      color: var(--muted);
+      font-size: 14px;
+      transition: transform .3s;
+      flex-shrink: 0;
+    }
+    .card.is-open .chevron { transform: rotate(180deg); }
+
+    .card-body {
+      display: none;
+      padding: 4px 18px 20px;
+      border-top: 1px solid var(--border);
+    }
+    .card.is-open .card-body { display: block; }
+
+    /* ===== HINT BOX ===== */
+    .hint {
+      background: var(--gold-dim);
+      border-left: 3px solid var(--gold);
+      border-radius: 0 8px 8px 0;
+      padding: 12px 16px;
+      margin: 14px 0 10px;
+      font-size: 14px;
+      font-style: italic;
+      color: var(--gold-light);
+      line-height: 1.5;
+    }
+
+    /* ===== GROUP LABEL ===== */
+    .glabel {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .6px;
+      color: var(--muted);
+      margin: 18px 0 8px;
+    }
+
+    /* ===== RADIO / CHECKBOX OPTIONS ===== */
+    .options { display: flex; flex-direction: column; gap: 7px; }
+    .options.grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 7px;
+    }
+    @media (max-width: 460px) { .options.grid-2 { grid-template-columns: 1fr; } }
+
+    .opt {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      background: var(--surface2);
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      padding: 13px 15px;
+      cursor: pointer;
+      transition: border-color .2s, background .2s;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    .opt:has(input:checked) {
+      border-color: var(--gold);
+      background: var(--gold-dim);
+    }
+    .opt input {
+      width: 20px; height: 20px;
+      accent-color: var(--gold);
+      flex-shrink: 0;
+      margin-top: 1px;
+      cursor: pointer;
+    }
+    .opt-body { flex: 1; }
+    .opt-label { font-size: 15px; font-weight: 500; }
+    .opt-desc { font-size: 12px; color: var(--muted); margin-top: 3px; line-height: 1.4; }
+
+    /* Badges */
+    .badge {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 20px;
+      text-transform: uppercase;
+      letter-spacing: .4px;
+      margin-left: 6px;
+      vertical-align: middle;
+    }
+    .badge-must { background: rgba(201,169,110,.25); color: var(--gold); }
+    .badge-opt  { background: rgba(122,122,122,.2); color: var(--muted); }
+    .badge-warn { background: rgba(207,102,121,.2); color: var(--red); }
+
+    /* ===== INPUTS ===== */
+    .field { margin-top: 14px; }
+    .field-label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+
+    .text-input,
+    .num-input,
+    .date-input,
+    .textarea {
+      width: 100%;
+      background: var(--surface2);
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      padding: 13px 15px;
+      color: var(--text);
+      font-size: 15px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color .2s;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+    .text-input:focus, .num-input:focus, .date-input:focus, .textarea:focus {
+      border-color: var(--gold);
+    }
+    .textarea { resize: vertical; min-height: 88px; line-height: 1.5; }
+
+    .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+    @media (max-width: 460px) { .row-2 { grid-template-columns: 1fr; } }
+
+    /* Notes field */
+    .notes-label {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 18px;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    /* ===== CLOSING QUOTE ===== */
+    .closing {
+      background: linear-gradient(135deg, rgba(201,169,110,.14), rgba(201,169,110,.04));
+      border: 1px solid var(--gold);
+      border-radius: var(--r);
+      padding: 22px 24px;
+      margin: 10px 0 0;
+      text-align: center;
+    }
+    .closing-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .6px;
+      color: var(--gold);
+      margin-bottom: 10px;
+    }
+    .closing p {
+      font-size: 15px;
+      font-style: italic;
+      color: var(--gold-light);
+      line-height: 1.65;
+    }
+    .closing small {
+      display: block;
+      margin-top: 10px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    /* ===== BOTTOM BAR ===== */
+    .bottom-bar {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      padding: 12px 14px;
+      display: flex;
+      gap: 10px;
+      z-index: 200;
+    }
+    .btn {
+      flex: 1;
+      padding: 15px;
+      border-radius: 10px;
+      border: none;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity .15s;
+      font-family: inherit;
+      letter-spacing: .2px;
+    }
+    .btn:active { opacity: .7; }
+    .btn-primary { background: var(--gold); color: #0d0d0d; }
+    .btn-ghost   { background: var(--surface2); color: var(--text); border: 1px solid var(--border); flex: 0 0 auto; padding: 15px 18px; }
+
+    /* ===== PRICE CARD ===== */
+    .price-card {
+      background: linear-gradient(135deg, rgba(201,169,110,.13), rgba(201,169,110,.03));
+      border: 2px solid var(--gold);
+      border-radius: var(--r);
+      padding: 22px 24px;
+      margin: 10px 0 0;
+    }
+    .price-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .price-card-title {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .6px;
+      color: var(--gold);
+    }
+    .price-total-wrap { text-align: right; }
+    .price-total {
+      font-size: 26px;
+      font-weight: 800;
+      color: var(--gold-light);
+      line-height: 1;
+    }
+    .price-total-label {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 3px;
+    }
+    .price-rows { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+    .price-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 8px;
+      font-size: 13px;
+      padding: 7px 10px;
+      background: rgba(255,255,255,.03);
+      border-radius: 8px;
+    }
+    .price-row.price-row-base { background: var(--gold-dim); }
+    .price-row-name { color: var(--text); flex: 1; }
+    .price-row-val { color: var(--gold); font-weight: 600; white-space: nowrap; }
+    .price-divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 10px 0;
+    }
+    .price-empty {
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+      font-style: italic;
+      padding: 8px 0;
+    }
+    .price-note {
+      font-size: 11px;
+      color: var(--muted);
+      text-align: center;
+      margin-top: 4px;
+    }
+    @media print {
+      .price-card { background: #fdf6e3 !important; border-color: #c9a96e; }
+      .price-total { color: #7a5f30; }
+      .price-row { background: #f5f0e8; }
+      .price-row.price-row-base { background: #faebd7; }
+      .price-row-val { color: #7a5f30; }
+    }
+
+    .price-row.price-row-included { background: rgba(76,175,114,.07); }
+    .price-row.price-row-included .price-row-val { color: var(--green); }
+    @media print {
+      .price-row.price-row-included { background: #f0faf4; }
+      .price-row.price-row-included .price-row-val { color: #2e7d4f; }
+    }
+
+    /* ===== PACKAGES ===== */
+    .packages { display: flex; flex-direction: column; gap: 12px; margin-top: 4px; }
+    .pkg {
+      background: var(--surface2);
+      border: 2px solid var(--border);
+      border-left: 4px solid var(--border);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: border-color .25s, box-shadow .25s, background .25s;
+      -webkit-user-select: none;
+      user-select: none;
+      overflow: hidden;
+      position: relative;
+    }
+    .pkg input[type=radio] { position: absolute; opacity: 0; width: 0; height: 0; }
+    .pkg-top {
+      padding: 16px 18px 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .pkg-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .pkg-green .pkg-dot { background: var(--green); }
+    .pkg-gold  .pkg-dot { background: var(--gold); }
+    .pkg-red   .pkg-dot { background: var(--red); }
+    .pkg-name { font-size: 15px; font-weight: 700; flex: 1; }
+    .pkg-price { font-size: 14px; font-weight: 700; color: var(--gold); white-space: nowrap; }
+    .pkg-recommend {
+      display: inline-block;
+      font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .5px;
+      background: rgba(201,169,110,.2); color: var(--gold);
+      padding: 3px 8px; border-radius: 20px; margin-left: 8px;
+    }
+    .pkg-body { padding: 14px 18px 16px; }
+    .pkg-tag { font-size: 12px; color: var(--muted); margin-bottom: 10px; font-style: italic; }
+    .pkg-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 500px) { .pkg-cols { grid-template-columns: 1fr; } }
+    .pkg-section-title {
+      font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .5px;
+      color: var(--muted); margin-bottom: 6px;
+    }
+    .pkg-list { list-style: none; display: flex; flex-direction: column; gap: 4px; }
+    .pkg-list li {
+      font-size: 13px; color: var(--text);
+      padding-left: 14px; position: relative; line-height: 1.4;
+    }
+    .pkg-list li::before { content: "–"; position: absolute; left: 0; color: var(--muted); }
+    .pkg-pros li::before { content: "✓"; color: var(--green); }
+    .pkg-row { display: flex; flex-wrap: wrap; gap: 5px 16px; }
+    .pkg-green { border-left-color: var(--green); }
+    .pkg-gold  { border-left-color: var(--gold); }
+    .pkg-red   { border-left-color: var(--red); }
+    .pkg.pkg-green:has(input:checked) { border-color: var(--green); box-shadow: 0 0 0 2px var(--green); background: rgba(76,175,114,.06); }
+    .pkg.pkg-gold:has(input:checked)  { border-color: var(--gold);  box-shadow: 0 0 0 2px var(--gold);  background: var(--gold-dim); }
+    .pkg.pkg-red:has(input:checked)   { border-color: var(--red);   box-shadow: 0 0 0 2px var(--red);   background: rgba(207,102,121,.06); }
+
+    /* ===== PRINT ===== */
+    @media print {
+      header, .bottom-bar, .done-btn, .chevron { display: none !important; }
+      body { background: #fff; color: #111; padding: 0; }
+      .card { border: 1px solid #ddd; margin-bottom: 6px; page-break-inside: auto; break-inside: auto; }
+      .card-body { display: block !important; background: #fff; }
+      .card-header { padding: 8px 12px; background: #fff; cursor: default; }
+      .hint { background: #fdf6e3; border-left: 3px solid #c9a96e; color: #555; }
+      .opt { padding: 8px 10px; }
+      .row-2 { grid-template-columns: 1fr 1fr; gap: 8px; }
+      .field { margin-top: 8px; }
+      .textarea { min-height: 52px; }
+      .glabel { margin: 10px 0 6px; }
+      .opt { background: #f5f5f5; border: 1px solid #ddd; }
+      .opt:has(input:checked) { background: #fdf6e3; border-color: #c9a96e; }
+      .text-input, .num-input, .date-input, .textarea { background: #f9f9f9; border-color: #ddd; color: #111; }
+      .closing { background: #fdf6e3; border-color: #c9a96e; }
+      .closing p { color: #7a5f30; }
+      .glabel { color: #555; }
+      .opt-label { color: #111; }
+      .opt-desc, .field-label, .notes-label, .card-sub { color: #666; }
+      .pkg { border: 1px solid #ddd !important; box-shadow: none !important; background: #f5f5f5 !important; }
+      .pkg-price { color: #333 !important; }
+      .pkg-recommend { background: #eee; color: #555; }
+      .pkg-list li { color: #333; }
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-mv+BGExwksdFXfFgu8KCdFHh9gS6eN+kqKn99JMer/MBgFBInw3oUkNAMvAaJCjrdlEaxBwTLqQNiDrJA+hRA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+</head>
+<body>
+
+<!-- ===== HEADER ===== -->
+<header>
+  <div class="header-top">
+    <div>
+      <h1>🏢 Stretnutie s klientom</h1>
+      <div id="header-date">Realitný web — príprava</div>
+    </div>
+  </div>
+  <div class="progress-wrap">
+    <div class="progress-track"><div class="progress-fill" id="prog-fill"></div></div>
+    <div class="progress-label" id="prog-label">0 / 19 sekcií hotových</div>
+  </div>
+</header>
+
+<main>
+
+  <!-- ===== 0. KLIENT ===== -->
+  <div class="card" id="s0">
+    <div class="card-header" onclick="toggle('s0')">
+      <span class="card-icon">👤</span>
+      <div class="card-titles">
+        <div class="card-title">Klient</div>
+        <div class="card-sub">Základné kontaktné údaje</div>
+      </div>
+      <button class="done-btn" onclick="markDone(event,'s0')" title="Hotové">✓</button>
+      <span class="chevron">▾</span>
+    </div>
+    <div class="card-body">
+      <div class="row-2">
+        <div class="field">
+          <label class="field-label">Meno a priezvisko</label>
+          <input type="text" class="text-input" placeholder="napr. Ján Novák">
+        </div>
+        <div class="field">
+          <label class="field-label">Firma / agentúra</label>
+          <input type="text" class="text-input" placeholder="napr. Premium Reality s.r.o.">
+        </div>
+      </div>
+      <div class="row-2">
+        <div class="field">
+          <label class="field-label">Email</label>
+          <input type="text" class="text-input" placeholder="napr. jan@reality.sk">
+        </div>
+        <div class="field">
+          <label class="field-label">Telefón</label>
+          <input type="text" class="text-input" placeholder="napr. +421 900 000 000">
+        </div>
+      </div>
+      <div class="field">
+        <label class="field-label">Webová stránka (ak existuje)</label>
+        <input type="text" class="text-input" placeholder="napr. www.reality.sk">
+      </div>
+      <div class="notes-label">📝 Poznámky o klientovi</div>
+      <textarea class="textarea" placeholder="Prvý dojem, motivácia klienta, história projektu..."></textarea>
+    </div>
+  </div>
+
+  <!-- ===== BIZNIS CIEĽ ===== -->
+  <div class="card" id="sb">
+    <div class="card-header" onclick="toggle('sb')">
+      <span class="card-icon">🎯</span>
+      <div class="card-titles">
+        <div class="card-title">Biznis cieľ & Typ projektu</div>
+        <div class="card-sub">Čo má web dosiahnuť?</div>
+      </div>
+      <button class="done-btn" onclick="markDone(event,'sb')" title="Hotové">✓</button>
+      <span class="chevron">▾</span>
+    </div>
+    <div class="card-body">
+      <span class="glabel">Typ projektu</span>
+      <div class="options">
+        <label class="opt">
+          <input type="radio" name="project_type" value="new">
+          <div class="opt-body">
+            <div class="opt-label">🆕 Nový web od nuly</div>
+          </div>
+        </label>
+        <label class="opt">
+          <input type="radio" name="project_type" value="redesign">
+          <div class="opt-body">
+            <div class="opt-label">🔄 Redizajn existujúceho webu</div>
+            <div class="opt-desc">Web existuje — chceme ho modernizovať</div>
+          </div>
+        </label>
+        <label class="opt">
+          <input type="radio" name="project_type" value="finish">
+          <div class="opt-body">
+            <div class="opt-label">🔧 Dokončenie rozpracovaného projektu</div>
+            <div class="opt-desc">Niečo už existuje alebo bolo začaté</div>
+          </div>
+        </label>
+      </div>
+      <span class="glabel">Hlavný cieľ webu</span>
+      <div class="options">
+        <label class="opt">
+          <input type="radio" name="biz_goal" value="sales">
+          <div class="opt-body">
+            <div class="opt-label">🏠 Predaj / prenájom nehnuteľností</div>
+            <div class="opt-desc">Primárny cieľ — generovanie dopytov od záujemcov</div>
+          </div>
+        </label>
+        <label class="opt">
+          <input type="radio" name="biz_goal" value="branding">
+          <div class="opt-body">
+            <div class="opt-label">🏆 Branding & prezentácia firmy</div>
+            <div class="opt-desc">Budovanie dôvery, profesionálny imidž na trhu</div>
+          </div>
+        </label>
+        <label class="opt">
+          <input type="radio" name="biz_goal" value="leads">
+          <div class="opt-body">
+            <div class="opt-label">📋 Lead generation</div>
+            <div class="opt-desc">Zbieranie kontaktov, dopytov a registrácií</div>
+          </div>
+        </label>
+        <label class="opt">
+          <input type="radio" name="biz_goal" value="combo">
+          <div class="opt-body">
+            <div class="opt-label">🔀 Kombinácia viacerých cieľov</div>
+          </div>
+        </label>
+      </div>
+      <div class="notes-label">📝 Vlastný popis cieľa</div>
+      <textarea class="textarea" placeholder="Čo má web konkrétne priniesť? Predaj bytov, branding realitnej kancelárie, mesačný počet dopytov..."></textarea>
+    </div>
+  </div>
+
+  <!-- ===== 1. KĽÚČOVÁ OTÁZKA ===== -->
+  <div class="card" id="s1">
+    <div class="card-header" onclick="toggle('s1')">
+      <span class="card-icon">👉</span>
+      <div class="card-titles">
+        <div class="card-title">1. Kľúčová otázka</div>
+        <div class="card-sub">Hneď na začiatku — rozhodne celý projekt</div>
+      </div>
+      <button class="done-btn" onclick="markDone(event,'s1')" title="Hotové">✓</button>
+      <span class="chevron">▾</span>
+    </div>
+    <div class="card-body">
+      <div class="hint">
+        „Chcete web čo najviac podobný tomu návrhu, alebo skôr modernú verziu, kde niektoré veci upravíme a zjednodušíme?"
+      </div>
+      <span class="glabel">Odpoveď klienta</span>
+      <div class="options">
+        <label class="opt">
+          <input type="radio" name="q1" value="A">
+          <div class="opt-body">
+            <div class="opt-label">A) Čo najviac podobný návrhu</div>
+            <div class="opt-desc">Výsledok bude čo najbližšie k predloženému návrhu</div>
+          </div>
+        </label>
+        <label class="opt">
+          <input type="radio" name="q1" value="B">
+          <div class="opt-body">
+            <div class="opt-label">B) Voľnejší prístup</div>
+            <div class="opt-desc">Návrh je len inšpirácia, niektoré veci zjednoduším</div>
+          </div>
+        </label>
+      </div>
+      <div class="notes-label">📝 Poznámky</div>
+      <textarea class="textarea" placeholder="Čo presne povedal klient..."></textarea>
+    </div>
+  </div>
+
+  <!-- ===== 2. ROZSAH WEBU ===== -->
+  <div class="card" id="s2">
+    <div class="card-header" onclick="toggle('s2')">
+      <span class="card-icon">🧱</span>
+      <div class="card-titles">
+        <div class="card-title">2. Rozsah webu (scope)</div>
+        <div class="card-sub">Zoznam stránok</div>
+      </div>
+      <button class="done-btn" onclick="markDone(event,'s2')" title="Hotové">✓</button>
+      <span class="chevron">▾</span>
+    </div>
+    <div class="card-body">
+      <div class="hint">„Je toto finálny zoznam stránok?"</div>
+      <span class="glabel">Stránky webu</span>
+      <div class="options grid-2">
+        <label class="opt">
+          <input type="checkbox">
+          <div class="opt-body"><div class="opt-label">🏠 Domov</div></div>
+        </label>
+        <label class="opt">
+          <input type="checkbox">
+          <div class="opt-body"><div class="opt-label">🏢 Nehnuteľnosti</div></div>
+        </label>
+        <label class="opt">
+          <input type="checkbox">
+          <div class="opt-body"><div class="opt-label">🔍 Detail nehnuteľnosti</div></div>
+        </label>
+        <label class="opt">
+          <input type="checkbox">
+          <div class="opt-body"><div class="opt-label">👥 O nás</div></div>
+        </label>
+        <label class="opt">
+          <input type="checkbox">
+          <div class="opt-body"><div class="opt-label">🧑‍💼 Náš tím</div></div>
+        </label>
+        <label class="opt">
+          <input type="checkbox">
+          <div class="opt-body"><div class="opt-label">⭐ Referencie</div></div>
+        </label>
+        <label class="opt">
+          <input type="checkbox">
+          <div class="opt-body"><div class="opt-label">📞 Kontakt</div></div>
+        </label>
+        <label class="opt">
+          <input type="checkbox">
+          <div class="opt-body">
+            <div class="opt-label">📰 Blog</div>
+            <div class="opt-desc">Môžeme doplniť neskôr</div>
+          </div>
+        </label>
+      </div>
+      <div class="notes-label">📝 Ďalšie stránky / poznámky</div>
+      <textarea class="textarea" placeholder="Stránky navyše, špeciálne sekcie..."></textarea>
+    </div>
+  </div>
+
+  <!-- ===== 3. VYHĽADÁVANIE ===== -->
+  <div class="card" id="s3">
+    <div class="card-header" onclick="toggle('s3')">
+      <span class="card-icon">🔍</span>
+      <div class="card-titles">
+        <div class="card-title">3. Vyhľadávanie</div>
+        <div class="card-sub">Kritická funkcionalita</div>
+      </div>
+      <button class="done-btn" onclick="markDone(event,'s3')" title="Hotové">✓</button>
+      <span class="chevron">▾</span>
+    </div>
+    <div class="card-body">
+      <div class="hint">„Čo z tohto je pre vás naozaj dôležité?"</div>
+      <span class="glabel">Typ vyhľadávania</span>
+      <div class="options">
+        <label class="opt">
+          <input type="radio" name="search_type" value="simple">
+          <div class="opt-body">
+            <div class="opt-label">Jednoduché</div>
+            <div class="opt-desc">Základné filtre — lacnejšie</div>
+          </div>
+        </label>
+        <label class="opt">
+          <input type="radio" name="search_type" value="advanced">
+          <div class="opt-body">
+            <div class="opt-label">Pokročilé (ako v návrhu)</div>
+            <div class="opt-desc">Všetky filtre podľa pôvodného návrhu</div>
+          </div>
+        </label>
+      </div>
+      <span class="glabel">Filtre — čo chce klient?</span>
+      <div class="options">
+        <label class="opt">
+          <input type="checkbox">
+          <div class="opt-body">
+            <div class="opt-label">💰 Filter podľa ceny <span class="badge badge-must">MUST</span></div>
+          </div>
+        </label>
+        <label class="opt">
+          <input type="checkbox">
+          <div class="opt-body">
+            <div class="opt-label">📍 Lokalita <span class="badge badge-must">MUST</span></div>
+          </div>
+        </label>
+        <label class="opt">
+          <input type="checkbox">
+          <div class="opt-body">
+            <div class="opt-label">🏗️ Typ nehnuteľnosti <span class="badge badge-must">MUST</span></div>
+          </div>
+        </label>
+        <label class="opt">
+          <input type="checkbox">
+          <div class="opt-body">
+            <div class="opt-label"># Vlastné ID nehnuteľnosti <span class="badge badge-opt">?</span></div>
+          </div>
+        </label>
+        <label class="opt">
+          <input type="checkbox">
+          <div class="opt-body">
+            <div class="opt-label">☑️ Checkboxy (WiFi, balkón, parkovanie…) <span class="badge badge-opt">?</span></div>
+          </div>
+        </label>
+      </div>
+      <div class="notes-label">📝 Poznámky</div>
+      <textarea class="textarea" placeholder="Ďalšie požiadavky na vyhľadávanie..."></textarea>
+    </div>
+  </div>
+
+  <!-- ===== 4. MAPA ===== -->
+  <div class="card" id="s4">
+    <div class="card-header" onclick="toggle('s4')">
+      <span class="card-icon">🗺️</span>
+      <div class="card-titles">
+        <div class="card-title">4. Mapa</div>
+        <div class="card-sub">Jednoduchá vs. klikateľná</div>
+      </div>
+      <button class="done-btn" onclick="markDone(event,'s4')" title="Hotové">✓</button>
+      <span class="chevron">▾</span>
+    </div>
+    <div class="card-body">
+      <span class="glabel">Typ mapy</span>
+      <div class="options">
+        <label class="opt">
+          <input type="radio" name="map_type" value="simple">
+          <div class="opt-body">
+            <div class="opt-label">Jednoduchá mapa</div>
+            <div class="opt-desc">Len vizuál — lacnejšie, rýchlejšie</div>
+          </div>
+        </label>
+        <label class="opt">
+          <input type="radio" name="map_type" value="interactive" data-price-min="350" data-price-max="450" data-price-label="Klikateľná mapa s bytmi">
+          <div class="opt-body">
+            <div class="opt-label">Klikateľná mapa s bytmi <span class="badge badge-warn">POKROČILÉ</span></div>
+            <div class="opt-desc">Každý byt klikateľný → detail — zložitejšia implementácia</div>
+          </div>
+        </label>
+      </div>
+      <div class="notes-label">📝 Poznámky</div>
+      <textarea class="textarea" placeholder="Upresniť požiadavky na mapu..."></textarea>
+    </div>
+  </div>
+
+  <!-- ===== 5. NEHNUTEĽNOSTI ===== -->
+  <div class="card" id="s5">
+    <div class="card-header" onclick="toggle('s5')">
+      <span class="card-icon">🏘️</span>
+      <div class="card-titles">
+        <div class="card-title">5. Nehnuteľnosti (dáta)</div>
+        <div class="card-sub">Správa obsahu</div>
+      </div>
+      <button class="done-btn" onclick="markDone(event,'s5')" title="Hotové">✓</button>
+      <span class="chevron">▾</span>
+    </div>
+    <div class="card-body">
+      <div class="hint">„Potrebujete, aby ste si vedeli sami pridávať nehnuteľnosti?"</div>
+      <div class="row-2">
+        <div class="field">
+          <label class="field-label">Počet nehnuteľností teraz</label>
+          <input type="number" class="num-input" placeholder="napr. 25" min="0">
+        </div>
+        <div class="field">
+          <label class="field-label">Koľko pribúda / mesiac</label>
+          <input type="number" class="num-input" placeholder="napr. 5" min="0">
+        </div>
+      </div>
+      <span class="glabel">Správa nehnuteľností</span>
+      <div class="options">
+        <label class="opt">
+          <input type="radio" name="prop_mgmt" value="self">
+          <div class="opt-body">
+            <div class="opt-label">Sami si pridávajú</div>
+            <div class="opt-desc">Potrebujeme CMS / admin panel</div>
+          </div>
+        </label>
+        <label class="opt">
+          <input type="radio" name="prop_mgmt" value="dev">
+          <div class="opt-body">
+            <div class="opt-label">Spravuje vývojár / niekto iný</div>
+            <div class="opt-desc">Staticky alebo cez API</div>
+          </div>
+        </label>
+      </div>
+      <div class="field">
+        <label class="field-label">Kto bude pridávať nehnuteľnosti?</label>
+        <input type="text" class="text-input" placeholder="napr. maklér, admin, ja sám...">
+      </div>
+      <span class="glabel">Zdroj dát o nehnuteľnostiach</span>
+      <div class="options">
+        <label class="opt">
+          <input type="radio" name="property_source" value="manual">
+          <div class="opt-body">
+            <div class="opt-label">Ručné pridávanie priamo vo WordPresse</div>
+            <div class="opt-desc">Maklér alebo admin bude nehnuteľnosti zapisovať manuálne</div>
+          </div>
+        </label>
+        <label class="opt">
+          <input type="radio" name="property_source" value="existing_system">
+          <div class="opt-body">
+            <div class="opt-label">Existujúci realitný systém / CRM</div>
+            <div class="opt-desc">Treba zistiť, odkiaľ sa budú dáta ťahať a či má export alebo API</div>
+          </div>
+        </label>
+        <label class="opt">
+          <input type="radio" name="property_source" value="portal_sync">
+          <div class="opt-body">
+            <div class="opt-label">Import z XML feedu alebo realitného portálu</div>
+            <div class="opt-desc">Napr. XML export z interného systému alebo napojenie na portály</div>
+          </div>
+        </label>
+        <label class="opt">
+          <input type="radio" name="property_source" value="unknown">
+          <div class="opt-body">
+            <div class="opt-label">Zatiaľ nevieme</div>
+            <div class="opt-desc">Treba dopýtať po stretnutí alebo pri technickom kole</div>
+          </div>
+        </label>
+      </div>
+      <div class="field">
+        <label class="field-label">Aký systém dnes používajú na správu nehnuteľností?</label>
+        <input type="text" class="text-input" placeholder="napr. vlastný systém, realsoft, absentuje, nevedeli povedať...">
+      </div>
+      <div class="notes-label">📝 Poznámky</div>
+      <textarea class="textarea" placeholder="Ďalšie info o nehnuteľnostiach, štruktúra dát, exportoch, XML/API možnostiach..."></textarea>
+    </div>
+  </div>
+
+  <!-- ===== 6. DIZAJN ===== -->
+  <div class="card" id="s6">
+    <div class="card-header" onclick="toggle('s6')">
+      <span class="card-icon">🎨</span>
+      <div class="card-titles">
+        <div class="card-title">6. Dizajn</div>
+        <div class="card-sub">Štýl a vizuál</div>
+      </div>
+      <button class="done-btn" onclick="markDone(event,'s6')" title="Hotové">✓</button>
+      <span class="chevron">▾</span>
+    </div>
+    <div class="card-body">
+      <span class="glabel">Postoj ku návrhu</span>
+      <div class="options">
+        <label class="opt">
+          <input type="radio" name="design_attitude" value="yes">
+          <div class="opt-body">
+            <div class="opt-label">👍 Páči sa, idem s ním</div>
+          </div>
+        </label>
+        <label class="opt">
+          <input type="radio" name="design_attitude" value="adjust">
+          <div class="opt-body">
+            <div class="opt-label">✏️ Páči sa, ale chce niečo zmeniť</div>
+          </div>
+        </label>
+        <label class="opt">
+          <input type="radio" name="design_attitude" value="new" data-price-min="550" data-price-max="800" data-price-label="🆕 Nový dizajn na mieru">
+          <div class="opt-body">
+            <div class="opt-label">🆕 Chce úplne nový návrh <span class="badge badge-warn">NA MIERU</span></div>
+          </div>
+        </label>
+      </div>
+      <span class="glabel">Farebná paleta</span>
+      <div class="options grid-2">
+        <label class="opt">
+          <input type="checkbox">
+          <div class="opt-body">
+            <div class="opt-label">⚫ Čierna + zlatá</div>
+            <div class="opt-desc">Luxus, prémiový realitný segment</div>
+          </div>
+        </label>
+        <label class="opt">
+          <input type="checkbox">
+          <div class="opt-body">
+            <div class="opt-label">⚪ Biela + svetlé tóny</div>
+            <div class="opt-desc">Vzdušný, moderný, čistý dojem</div>
+          </div>
+        </label>
+        <label class="opt">
+          <input type="checkbox">
+          <div class="opt-body">
+            <div class="opt-label">🟤 Béžová + zemité tóny</div>
+            <div class="opt-desc">Teplý, príjemný, elegantný štýl</div>
+          </div>
+        </label>
+        <label class="opt">
+          <input type="checkbox">
+          <div class="opt-body">
+            <div class="opt-label">🔵 Tmavá modrá + strieborná</div>
+            <div class="opt-desc">Profesionálny, dôveryhodný imidž</div>
+          </div>
+        </label>
+        <label class="opt">
+          <input type="checkbox">
+          <div class="opt-body">
+            <div class="opt-label">🟢 Zelená + prírodné tóny</div>
+            <div class="opt-desc">Ekologický, rodinný segment</div>
+          </div>
+        </label>
+        <label class="opt">
+          <input type="checkbox">
+          <div class="opt-body">
+            <div class="opt-label">🎨 Vlastná paleta podľa loga</div>
+            <div class="opt-desc">Dizajn nadviažeme na existujúci branding</div>
+          </div>
+        </label>
+      </div>
+      <span class="glabel" style="margin-top:18px">Celkový štýl & feeling</span>
+      <div class="options grid-2">
+        <label class="opt">
+          <input type="checkbox">
+          <div class="opt-body">
+            <div class="opt-label">💎 Luxusný / prémiový</div>
+            <div class="opt-desc">Bohatý vizuál, veľké fotky, zlato</div>
+          </div>
+        </label>
+        <label class="opt">
+          <input type="checkbox">
+          <div class="opt-body">
+            <div class="opt-label">🌙 Minimalistický</div>
+            <div class="opt-desc">Menej je viac — obsah je na prvom mieste</div>
+          </div>
+        </label>
+        <label class="opt">
+          <input type="checkbox">
+          <div class="opt-body">
+            <div class="opt-label">🚀 Moderný / bold</div>
+            <div class="opt-desc">Veľká typografia, výrazné prvky, energia</div>
+          </div>
+        </label>
+        <label class="opt">
+          <input type="checkbox">
+          <div class="opt-body">
+            <div class="opt-label">📐 Čistý / korporátny</div>
+            <div class="opt-desc">Usporiadaný, dôveryhodný, profesionálny</div>
+          </div>
+        </label>
+        <label class="opt">
+          <input type="checkbox">
+          <div class="opt-body">
+            <div class="opt-label">🏡 Rodinný / priateľský</div>
+            <div class="opt-desc">Teplý, oslovuje rodiny a bežných kupujúcich</div>
+          </div>
+        </label>
+        <label class="opt">
+          <input type="checkbox">
+          <div class="opt-body">
+            <div class="opt-label">🌐 Vizuálne orientovaný</div>
+            <div class="opt-desc">Fotky a vizualizácie dominujú celému webu</div>
+          </div>
+        </label>
+      </div>
+      <span class="glabel" style="margin-top:18px">Inšpirácia (weby ktoré sa páčia)</span>
+      <div class="field" style="margin-top:0">
+        <textarea class="textarea" placeholder="napr. www.engelvoelkers.com, www.svoboda-williams.com — čo sa na nich páči?"></textarea>
+      </div>
+      <div class="notes-label">📝 Ďalšie požiadavky na dizajn</div>
+      <textarea class="textarea" placeholder="Konkrétne prvky, animácie, špeciálne sekcie..."></textarea>
+    </div>
+  </div>
+
+  <!-- ===== 7. PODKLADY ===== -->
+  <div class="card" id="s7">
+    <div class="card-header" onclick="toggle('s7')">
+      <span class="card-icon">📸</span>
+      <div class="card-titles">
+        <div class="card-title">7. Podklady</div>
+        <div class="card-sub">Kritické — čo má klient pripravené?</div>
+      </div>
+      <button class="done-btn" onclick="markDone(event,'s7')" title="Hotové">✓</button>
+      <span class="chevron">▾</span>
+    </div>
+    <div class="card-body">
+      <span class="glabel">Čo má klient?</span>
+      <div class="options">
+        <label class="opt">
+          <input type="checkbox">
+          <div class="opt-body"><div class="opt-label">📄 Texty</div></div>
+        </label>
+        <label class="opt">
+          <input type="checkbox">
+          <div class="opt-body"><div class="opt-label">🏗️ Vizualizácie</div></div>
+        </label>
+        <label class="opt">
+          <input type="checkbox">
+          <div class="opt-body"><div class="opt-label">🎨 Logo (v akej kvalite?)</div></div>
+        </label>
+        <label class="opt">
+          <input type="checkbox">
+          <div class="opt-body"><div class="opt-label">📷 Fotky projektov</div></div>
+        </label>
+      </div>
+      <div class="field">
+        <label class="field-label">Formát / kvalita loga</label>
+        <input type="text" class="text-input" placeholder="napr. SVG, AI, PNG 300dpi...">
+      </div>
+      <div class="row-2">
+        <div class="field">
+          <label class="field-label">Kto dodá chýbajúce podklady?</label>
+          <input type="text" class="text-input" placeholder="napr. grafik, klient...">
+        </div>
+        <div class="field">
+          <label class="field-label">Dokedy budú podklady?</label>
+          <input type="date" class="date-input">
+        </div>
+      </div>
+      <div class="notes-label">📝 Čo konkrétne chýba</div>
+      <textarea class="textarea" placeholder="Zoznam chýbajúcich podkladov, kto čo zabezpečí..."></textarea>
+    </div>
+  </div>
+
+  <!-- ===== 8. DOMÉNA + HOSTING ===== -->
+  <div class="card" id="s8">
+    <div class="card-header" onclick="toggle('s8')">
+      <span class="card-icon">🌐</span>
+      <div class="card-titles">
+        <div class="card-title">8. Doména + Hosting</div>
+        <div class="card-sub">Technická stránka</div>
+      </div>
+      <button class="done-btn" onclick="markDone(event,'s8')" title="Hotové">✓</button>
+      <span class="chevron">▾</span>
+    </div>
+    <div class="card-body">
+      <div class="options" style="margin-top:14px">
+        <label class="opt">
+          <input type="checkbox">
+          <div class="opt-body"><div class="opt-label">✅ Mám prístupy k doméne a hostingu</div></div>
+        </label>
+      </div>
+      <div class="row-2">
+        <div class="field">
+          <label class="field-label">Doména</label>
+          <input type="text" class="text-input" placeholder="napr. klient-reality.sk">
+        </div>
+        <div class="field">
+          <label class="field-label">Hosting provider</label>
+          <input type="text" class="text-input" placeholder="napr. WebSupport, AWS...">
+        </div>
+      </div>
+      <div class="notes-label">📝 Technické poznámky</div>
+      <textarea class="textarea" placeholder="Prihlasovacie údaje, špecifiká hostingu..."></textarea>
+    </div>
+  </div>
+
+  <!-- ===== 9. ROZŠÍRENIA ===== -->
+  <div class="card" id="s9">
+    <div class="card-header" onclick="toggle('s9')">
+      <span class="card-icon">💰</span>
+      <div class="card-titles">
+        <div class="card-title">9. Rozšírenia</div>
+        <div class="card-sub">Mimo základného scope</div>
+      </div>
+      <button class="done-btn" onclick="markDone(event,'s9')" title="Hotové">✓</button>
+      <span class="chevron">▾</span>
+    </div>
+    <div class="card-body">
+      <div class="hint">Položky mimo základného rozsahu — cena sa dohodne individuálne</div>
+      <div class="options">
+        <label class="opt">
+          <input type="checkbox" data-price-min="350" data-price-max="450" data-price-label="Viac jazykov (multilingual)">
+          <div class="opt-body"><div class="opt-label">🌍 Viac jazykov (multilingual)</div></div>
+        </label>
+        <label class="opt">
+          <input type="checkbox" data-price-min="250" data-price-max="350" data-price-label="SEO optimalizácia" data-price-included-in="premium">
+          <div class="opt-body">
+            <div class="opt-label">📈 SEO optimalizácia</div>
+            <div class="opt-desc">Technické SEO, meta tagy, sitemap — pri Premium zahrnuté</div>
+        </label>
+        <label class="opt">
+          <input type="checkbox" data-price-min="120" data-price-max="200" data-price-label="Nastavenie reklám (Google Ads / Meta)">
+          <div class="opt-body"><div class="opt-label">📢 Reklamy (Google Ads, Meta…)</div></div>
+        </label>
+        <label class="opt">
+          <input type="checkbox" data-price-min="450" data-price-max="550" data-price-label="Prepojenie na realitné portály">
+          <div class="opt-body">
+            <div class="opt-label">🔗 Prepojenie na realitné portály</div>
+            <div class="opt-desc">NEHNUTELNOSTI.SK, REALITY.SK, atď.</div>
+          </div>
+        </label>
+        <label class="opt">
+          <input type="checkbox" data-price-min="250" data-price-max="350" data-price-label="Generovanie PDF ponuky nehnuteľnosti">
+          <div class="opt-body">
+            <div class="opt-label">📄 Generovanie PDF ponuky nehnuteľnosti</div>
+            <div class="opt-desc">Web automaticky vygeneruje PDF pre každú nehnuteľnosť</div>
+          </div>
+        </label>
+      </div>
+      <div class="notes-label">📝 Poznámky</div>
+      <textarea class="textarea" placeholder="Konkrétne požiadavky na rozšírenia, priority..."></textarea>
+    </div>
+  </div>
+
+  <!-- ===== 10. DEADLINE ===== -->
+  <div class="card" id="s10">
+    <div class="card-header" onclick="toggle('s10')">
+      <span class="card-icon">⏱️</span>
+      <div class="card-titles">
+        <div class="card-title">10. Deadline</div>
+        <div class="card-sub">Termíny</div>
+      </div>
+      <button class="done-btn" onclick="markDone(event,'s10')" title="Hotové">✓</button>
+      <span class="chevron">▾</span>
+    </div>
+    <div class="card-body">
+      <div class="hint">„Kedy chcete mať web hotový?"</div>
+      <div class="row-2">
+        <div class="field">
+          <label class="field-label">Deadline klienta</label>
+          <input type="date" class="date-input">
+        </div>
+        <div class="field">
+          <label class="field-label">Realistický deadline (tvoj odhad)</label>
+          <input type="date" class="date-input">
+        </div>
+      </div>
+      <div class="notes-label">📝 Milestones / poznámky</div>
+      <textarea class="textarea" placeholder="Dôvody deadline, fázy projektu, launch dátum..."></textarea>
+    </div>
+  </div>
+
+  <!-- ===== 11. REŽIM PRÁCE ===== -->
+  <div class="card" id="s11">
+    <div class="card-header" onclick="toggle('s11')">
+      <span class="card-icon">📄</span>
+      <div class="card-titles">
+        <div class="card-title">11. Režim práce</div>
+        <div class="card-sub">Pravidlá spolupráce</div>
+      </div>
+      <button class="done-btn" onclick="markDone(event,'s11')" title="Hotové">✓</button>
+      <span class="chevron">▾</span>
+    </div>
+    <div class="card-body">
+      <div class="field">
+        <label class="field-label">Počet revízií (dohodnuté)</label>
+        <input type="number" class="num-input" placeholder="napr. 2" min="1" max="10">
+      </div>
+      <span class="glabel">Preferovaná komunikácia</span>
+      <div class="options grid-2">
+        <label class="opt">
+          <input type="checkbox">
+          <div class="opt-body"><div class="opt-label">📧 Email</div></div>
+        </label>
+        <label class="opt">
+          <input type="checkbox">
+          <div class="opt-body"><div class="opt-label">📱 Telefón</div></div>
+        </label>
+        <label class="opt">
+          <input type="checkbox">
+          <div class="opt-body"><div class="opt-label">💬 WhatsApp / Signal</div></div>
+        </label>
+        <label class="opt">
+          <input type="checkbox">
+          <div class="opt-body"><div class="opt-label">🎯 Projektový nástroj</div></div>
+        </label>
+      </div>
+      <div class="field">
+        <label class="field-label">Spôsob schvaľovania</label>
+        <input type="text" class="text-input" placeholder="napr. email schválenie, PDF na podpis, Figma...">
+      </div>
+      <div class="notes-label">📝 Ďalšie pravidlá</div>
+      <textarea class="textarea" placeholder="Čas odozvy, spôsob odovzdania, platobné podmienky..."></textarea>
+    </div>
+  </div>
+
+  <!-- ===== 12. TECHNOLÓGIA ===== -->
+  <div class="card" id="s12">
+    <div class="card-header" onclick="toggle('s12')">
+      <span class="card-icon">⚙️</span>
+      <div class="card-titles">
+        <div class="card-title">12. Technológia</div>
+        <div class="card-sub">Stack a platforma</div>
+      </div>
+      <button class="done-btn" onclick="markDone(event,'s12')" title="Hotové">✓</button>
+      <span class="chevron">▾</span>
+    </div>
+    <div class="card-body">
+      <div class="hint">Technológiu vyberieme podľa rozsahu projektu, spôsobu správy obsahu a požadovaných napojení.</div>
+      <span class="glabel">Preferovaný smer riešenia</span>
+      <div class="options">
+        <label class="opt">
+          <input type="radio" name="tech" value="wp">
+          <div class="opt-body">
+            <div class="opt-label">CMS riešenie</div>
+            <div class="opt-desc">Ak klient potrebuje jednoduchú správu obsahu a nehnuteľností bez zložitého vývoja</div>
+          </div>
+        </label>
+        <label class="opt">
+          <input type="radio" name="tech" value="wp_custom">
+          <div class="opt-body">
+            <div class="opt-label">CMS + custom úpravy</div>
+            <div class="opt-desc">Ak treba vlastný dizajn, špecifické bloky a pokročilejšiu funkcionalitu</div>
+          </div>
+        </label>
+        <label class="opt">
+          <input type="radio" name="tech" value="custom">
+          <div class="opt-body">
+            <div class="opt-label">Custom riešenie <span class="badge badge-warn">POKROČILÉ</span></div>
+            <div class="opt-desc">Ak sú potrebné špecifické integrácie, workflow alebo vyššia technická flexibilita</div>
+          </div>
+        </label>
+        <label class="opt">
+          <input type="radio" name="tech" value="dev_choice">
+          <div class="opt-body">
+            <div class="opt-label">Výber po upresnení požiadaviek</div>
+            <div class="opt-desc">Definitívne rozhodnutie spravíme po potvrdení zdroja dát, správy obsahu a napojení</div>
+          </div>
+        </label>
+      </div>
+      <span class="glabel">Na čom závisí výber</span>
+      <div class="options">
+        <label class="opt">
+          <input type="checkbox">
+          <div class="opt-body">
+            <div class="opt-label">Klient chce sám spravovať obsah</div>
+          </div>
+        </label>
+        <label class="opt">
+          <input type="checkbox">
+          <div class="opt-body">
+            <div class="opt-label">Nehnuteľnosti sa budú importovať z externého systému</div>
+          </div>
+        </label>
+        <label class="opt">
+          <input type="checkbox">
+          <div class="opt-body">
+            <div class="opt-label">Treba napojenie na portály alebo XML feed</div>
+          </div>
+        </label>
+        <label class="opt">
+          <input type="checkbox">
+          <div class="opt-body">
+            <div class="opt-label">Bude sa riešiť väčší rozsah custom funkcionality</div>
+          </div>
+        </label>
+      </div>
+
+      <span class="glabel">Technické varianty realizácie</span>
+      <div class="options">
+        <label class="opt">
+          <input type="radio" name="tech_variant" value="mvp">
+          <div class="opt-body">
+            <div class="opt-label">MVP / Rýchly štart</div>
+            <div class="opt-desc">WordPress + realitný modul + základné úpravy dizajnu a štruktúry.</div>
+            <div class="opt-desc">Orientačný čas: 3 až 5 týždňov (podľa dostupnosti podkladov).</div>
+          </div>
+        </label>
+        <label class="opt">
+          <input type="radio" name="tech_variant" value="standard">
+          <div class="opt-body">
+            <div class="opt-label">Štandard / Odporúčaný smer</div>
+            <div class="opt-desc">WordPress + custom úpravy, lepšia práca s listingom, filtrom a detailom nehnuteľnosti.</div>
+            <div class="opt-desc">Orientačný čas: 5 až 8 týždňov.</div>
+          </div>
+        </label>
+        <label class="opt">
+          <input type="radio" name="tech_variant" value="advanced">
+          <div class="opt-body">
+            <div class="opt-label">Pokročilé riešenie</div>
+            <div class="opt-desc">Custom funkcionality, pokročilé integrácie, dôraz na výkon, škálovanie a workflow.</div>
+            <div class="opt-desc">Orientačný čas: 8 až 12+ týždňov podľa rozsahu.</div>
+          </div>
+        </label>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Vybraný variant a dôvod</label>
+        <input type="text" class="text-input" placeholder="napr. Štandard - klient chce podobný web ako dnes, ale s lepšou správou obsahu a bez závislosti na pôvodnej firme">
+      </div>
+
+      <div class="notes-label">📝 Poznámky</div>
+      <textarea class="textarea" placeholder="Poznámky k technickému riešeniu, preferencie klienta, otvorené body..."></textarea>
+    </div>
+  </div>
+
+  <!-- ===== 13. KONTAKTNÝ FORMULÁR ===== -->
+  <div class="card" id="s13">
+    <div class="card-header" onclick="toggle('s13')">
+      <span class="card-icon">📬</span>
+      <div class="card-titles">
+        <div class="card-title">13. Kontaktný formulár</div>
+        <div class="card-sub">Dopyty od návštevníkov webu</div>
+      </div>
+      <button class="done-btn" onclick="markDone(event,'s13')" title="Hotové">✓</button>
+      <span class="chevron">▾</span>
+    </div>
+    <div class="card-body">
+      <div class="hint">„Keď vám záujemca pošle správu cez web — čo sa má stať potom?"</div>
+      <span class="glabel">Spôsob spracovania dopytov</span>
+      <div class="options">
+        <label class="opt">
+          <input type="radio" name="contact_type" value="email">
+          <div class="opt-body">
+            <div class="opt-label">Formulár → email <span class="badge badge-must">ODPORÚČAM</span></div>
+            <div class="opt-desc">Správa príde na zadaný email — jednoduché, overené</div>
+          </div>
+        </label>
+        <label class="opt">
+          <input type="radio" name="contact_type" value="email_only">
+          <div class="opt-body">
+            <div class="opt-label">Len zobrazená emailová adresa</div>
+            <div class="opt-desc">Bez formulára — najjednoduchšia varianta</div>
+          </div>
+        </label>
+        <label class="opt">
+          <input type="radio" name="contact_type" value="other">
+          <div class="opt-body">
+            <div class="opt-label">Iné</div>
+          </div>
+        </label>
+      </div>
+      <div class="field">
+        <label class="field-label">Email na príjem dopytov</label>
+        <input type="text" class="text-input" placeholder="napr. info@reality.sk">
+      </div>
+      <div class="notes-label">📝 Poznámky</div>
+      <textarea class="textarea" placeholder="Notifikácie, auto-reply, GDPR súhlas v formulári..."></textarea>
+    </div>
+  </div>
+
+  <!-- ===== 14. ANALYTICS & TRACKING ===== -->
+  <div class="card" id="s14">
+    <div class="card-header" onclick="toggle('s14')">
+      <span class="card-icon">📊</span>
+      <div class="card-titles">
+        <div class="card-title">14. Analytics & Tracking</div>
+        <div class="card-sub">Meranie výkonnosti webu</div>
+      </div>
+      <button class="done-btn" onclick="markDone(event,'s14')" title="Hotové">✓</button>
+      <span class="chevron">▾</span>
+    </div>
+    <div class="card-body">
+      <span class="glabel">Čo chce sledovať?</span>
+      <div class="options">
+        <label class="opt">
+          <input type="checkbox">
+          <div class="opt-body">
+            <div class="opt-label">📈 Google Analytics 4 <span class="badge badge-must">ODPORÚČAM</span></div>
+            <div class="opt-desc">Návštevnosť, zdroje, konverzie — základný štandard</div>
+          </div>
+        </label>
+        <label class="opt">
+          <input type="checkbox">
+          <div class="opt-body">
+            <div class="opt-label">🎯 Meta Pixel (Facebook / Instagram)</div>
+            <div class="opt-desc">Retargeting reklám — nutné ak plánuje sociálne siete</div>
+          </div>
+        </label>
+        <label class="opt">
+          <input type="checkbox">
+          <div class="opt-body">
+            <div class="opt-label">🔍 Google Search Console</div>
+            <div class="opt-desc">SEO štatistiky, indexovanie v Google</div>
+          </div>
+        </label>
+        <label class="opt">
+          <input type="checkbox">
+          <div class="opt-body">
+            <div class="opt-label">🔥 Hotjar / Heatmapa <span class="badge badge-opt">VOLITEĽNÉ</span></div>
+            <div class="opt-desc">Sledovanie pohybu myši, nahrávky návštev</div>
+          </div>
+        </label>
+        <label class="opt">
+          <input type="checkbox">
+          <div class="opt-body">
+            <div class="opt-label">🚫 Nepotrebuje žiadny tracking</div>
+          </div>
+        </label>
+      </div>
+      <div class="notes-label">📝 Poznámky</div>
+      <textarea class="textarea" placeholder="Existujúce účty (GA, Search Console), prístupy..."></textarea>
+    </div>
+  </div>
+
+  <!-- ===== 15. GDPR / PRÁVNE ===== -->
+  <div class="card" id="s15">
+    <div class="card-header" onclick="toggle('s15')">
+      <span class="card-icon">🔒</span>
+      <div class="card-titles">
+        <div class="card-title">15. GDPR / Právne náležitosti</div>
+        <div class="card-sub">Povinné pre SK / CZ weby</div>
+      </div>
+      <button class="done-btn" onclick="markDone(event,'s15')" title="Hotové">✓</button>
+      <span class="chevron">▾</span>
+    </div>
+    <div class="card-body">
+      <div class="hint">Na Slovensku povinné — cookie banner, ochrana osobných údajov. Nezanedbať!</div>
+      <span class="glabel">Čo je potrebné riešiť?</span>
+      <div class="options">
+        <label class="opt">
+          <input type="checkbox">
+          <div class="opt-body">
+            <div class="opt-label">🍪 Cookie consent banner <span class="badge badge-must">POVINNÉ</span></div>
+            <div class="opt-desc">Súhlas so sledovaním — zákonná povinnosť pri GA / Meta Pixel</div>
+          </div>
+        </label>
+        <label class="opt">
+          <input type="checkbox">
+          <div class="opt-body">
+            <div class="opt-label">📋 Ochrana osobných údajov (stránka) <span class="badge badge-must">POVINNÉ</span></div>
+            <div class="opt-desc">Povinná právna stránka pri zbere akýchkoľvek údajov</div>
+          </div>
+        </label>
+        <label class="opt">
+          <input type="checkbox">
+          <div class="opt-body">
+            <div class="opt-label">📜 Obchodné podmienky (VOP)</div>
+            <div class="opt-desc">Odporúčam ak web ponúka služby alebo produkty</div>
+          </div>
+        </label>
+        <label class="opt">
+          <input type="checkbox">
+          <div class="opt-body">
+            <div class="opt-label">✍️ GDPR súhlas v kontaktnom formulári</div>
+            <div class="opt-desc">Checkbox „Súhlasím so spracovaním osobných údajov"</div>
+          </div>
+        </label>
+      </div>
+      <span class="glabel">Stav podkladov</span>
+      <div class="options">
+        <label class="opt">
+          <input type="radio" name="gdpr_status" value="has">
+          <div class="opt-body">
+            <div class="opt-label">✅ Klient má existujúce texty</div>
+          </div>
+        </label>
+        <label class="opt">
+          <input type="radio" name="gdpr_status" value="create">
+          <div class="opt-body">
+            <div class="opt-label">✏️ Treba vytvoriť / upraviť</div>
+            <div class="opt-desc">Odporúčam právnika alebo generátor GDPR textov</div>
+          </div>
+        </label>
+        <label class="opt">
+          <input type="radio" name="gdpr_status" value="later">
+          <div class="opt-body">
+            <div class="opt-label">⏭️ Zatiaľ nerieši</div>
+          </div>
+        </label>
+      </div>
+      <div class="notes-label">📝 Poznámky</div>
+      <textarea class="textarea" placeholder="Kto zabezpečí GDPR texty, existujúce dokumenty..."></textarea>
+    </div>
+  </div>
+
+  <!-- ===== 16. ROZPOČET & BALÍČKY ===== -->
+  <div class="card" id="s16">
+    <div class="card-header" onclick="toggle('s16')">
+      <span class="card-icon">💰</span>
+      <div class="card-titles">
+        <div class="card-title">16. Rozpočet & Balíčky</div>
+        <div class="card-sub">Cenová ponuka — prezentácia klientovi</div>
+      </div>
+      <button class="done-btn" onclick="markDone(event,'s16')" title="Hotové">✓</button>
+      <span class="chevron">▾</span>
+    </div>
+    <div class="card-body">
+      <div class="hint">Toto je orientačný návrh — nie finálna ponuka. Finálna cena sa dohodne individuálne po upresení rozsahu.</div>
+      <span class="glabel">Výber balíčka</span>
+      <div class="packages">
+
+        <!-- ZÁKLAD -->
+        <label class="pkg pkg-green">
+          <input type="radio" name="package" value="basic" data-price-min="1000" data-price-max="1500" data-price-label="Základné riešenie">
+          <div class="pkg-top">
+            <span class="pkg-dot"></span>
+            <span class="pkg-name">🟢 ZÁKLAD <span style="font-weight:400;font-size:13px;color:var(--muted)">— Rýchly štart</span></span>
+            <span class="pkg-price">1 000 – 1 500 €</span>
+          </div>
+          <div class="pkg-body">
+            <div class="pkg-tag">Vhodné: ak chce rýchlo spustiť jednoduchý a funkčný web s nižším rozpočtom</div>
+            <div class="pkg-cols">
+              <div>
+                <div class="pkg-section-title">Rozsah riešenia</div>
+                <ul class="pkg-list">
+                  <li>Prezentačný web</li>
+                  <li>Základné stránky</li>
+                  <li>Jednoduchý zoznam nehnuteľností</li>
+                  <li>Základná kontaktná funkcionalita</li>
+                </ul>
+              </div>
+              <div>
+                <div class="pkg-section-title">Výhody</div>
+                <ul class="pkg-list pkg-pros">
+                  <li>Rýchle spustenie</li>
+                  <li>Nízka cena</li>
+                  <li>Jasne definovaný základ</li>
+                </ul>
+              </div>
+            </div>
+            <div style="margin-top:10px">
+              <div class="pkg-section-title">Funkcie</div>
+              <ul class="pkg-list pkg-row">
+                <li>Kontaktný formulár</li>
+                <li>Základné filtrovanie</li>
+                <li>Kontakt a dopyt</li>
+              </ul>
+            </div>
+          </div>
+        </label>
+
+        <!-- PROFESIONÁL -->
+        <label class="pkg pkg-gold">
+          <input type="radio" name="package" value="pro" data-price-min="1500" data-price-max="2500" data-price-label="Štandardné riešenie">
+          <div class="pkg-top">
+            <span class="pkg-dot"></span>
+            <span class="pkg-name">🟡 PROFESIONÁL <span class="pkg-recommend">ODPORÚČAM</span></span>
+            <span class="pkg-price">1 500 – 2 500 €</span>
+          </div>
+          <div class="pkg-body">
+            <div class="pkg-tag">Vhodné: ak chce profesionálny web, lepšiu správu obsahu a priestor na rast</div>
+            <div class="pkg-cols">
+              <div>
+                <div class="pkg-section-title">Rozsah riešenia</div>
+                <ul class="pkg-list">
+                  <li>Kompletný web</li>
+                  <li>Prepracovanejší dizajn</li>
+                  <li>Správa nehnuteľností</li>
+                  <li>Lepšia editovateľnosť obsahu</li>
+                </ul>
+              </div>
+              <div>
+                <div class="pkg-section-title">Výhody</div>
+                <ul class="pkg-list pkg-pros">
+                  <li>Lepší dojem a dôveryhodnosť</li>
+                  <li>Profesionálny výsledok</li>
+                  <li>Pripravené na rozšírenia</li>
+                </ul>
+              </div>
+            </div>
+            <div style="margin-top:10px">
+              <div class="pkg-section-title">Funkcie</div>
+              <ul class="pkg-list pkg-row">
+                <li>Pokročilé filtrovanie</li>
+                <li>Detail nehnuteľnosti</li>
+                <li>Správa obsahu</li>
+                <li>Lepšia štruktúra webu</li>
+              </ul>
+            </div>
+          </div>
+        </label>
+
+        <!-- PREMIUM -->
+        <label class="pkg pkg-red">
+          <input type="radio" name="package" value="premium" data-price-min="2500" data-price-max="3500" data-price-label="Pokročilé riešenie">
+          <div class="pkg-top">
+            <span class="pkg-dot"></span>
+            <span class="pkg-name">🔴 PREMIUM <span style="font-weight:400;font-size:13px;color:var(--muted)">— Pokročilé riešenie</span></span>
+            <span class="pkg-price">2 500 – 3 500 €</span>
+          </div>
+          <div class="pkg-body">
+            <div class="pkg-tag">Vhodné: ak chce výraznejšie odlíšenie, pokročilé funkcie a vyšší konverzný potenciál</div>
+            <div class="pkg-cols">
+              <div>
+                <div class="pkg-section-title">Rozsah riešenia</div>
+                <ul class="pkg-list">
+                  <li>Pokročilé funkcionality</li>
+                  <li>Interaktivita a lepší UX</li>
+                  <li>Vyšší dôraz na SEO</li>
+                  <li>Vyšší dôraz na výkon</li>
+                </ul>
+              </div>
+              <div>
+                <div class="pkg-section-title">Výhody</div>
+                <ul class="pkg-list pkg-pros">
+                  <li>Najlepší UX</li>
+                  <li>Vyšší konverzný potenciál</li>
+                  <li>Silnejšie odlíšenie od konkurencie</li>
+                </ul>
+              </div>
+            </div>
+            <div style="margin-top:10px">
+              <div class="pkg-section-title">Funkcie</div>
+              <ul class="pkg-list pkg-row">
+                <li>Interaktívna mapa</li>
+                <li>Pokročilé filtre</li>
+                <li>SEO optimalizácia</li>
+                <li>Rýchlostná optimalizácia</li>
+              </ul>
+            </div>
+          </div>
+        </label>
+
+      </div>
+
+      <div class="row-2" style="margin-top:18px">
+        <div class="field">
+          <label class="field-label">Dohodnutá cena (€)</label>
+          <input type="text" class="text-input" placeholder="napr. 2 000 €">
+        </div>
+        <div class="field">
+          <label class="field-label">Záloha (€)</label>
+          <input type="text" class="text-input" placeholder="napr. 500 € (50 %)">
+        </div>
+      </div>
+      <div class="row-2">
+        <div class="field">
+          <label class="field-label">Spôsob fakturácie</label>
+          <input type="text" class="text-input" placeholder="napr. 50 % záloha / 50 % po odovzdaní">
+        </div>
+        <div class="field">
+          <label class="field-label">Splatnosť faktúr</label>
+          <input type="text" class="text-input" placeholder="napr. 7 dní, 14 dní">
+        </div>
+      </div>
+      <span class="glabel">Finančné podmienky</span>
+      <div class="options">
+        <label class="opt">
+          <input type="checkbox">
+          <div class="opt-body">
+            <div class="opt-label">Práca začína po uhradení zálohy</div>
+          </div>
+        </label>
+        <label class="opt">
+          <input type="checkbox">
+          <div class="opt-body">
+            <div class="opt-label">V cene sú zahrnuté 2 kolá revízií</div>
+          </div>
+        </label>
+        <label class="opt">
+          <input type="checkbox">
+          <div class="opt-body">
+            <div class="opt-label">Obsah dodáva klient</div>
+          </div>
+        </label>
+        <label class="opt">
+          <input type="checkbox">
+          <div class="opt-body">
+            <div class="opt-label">Extra práce mimo scope sa naceňujú samostatne</div>
+          </div>
+        </label>
+      </div>
+      <div class="notes-label">📝 Cenové poznámky</div>
+      <textarea class="textarea" placeholder="Spôsob platby, splatnosť, zľavy, čo presne je v cene, čo je mimo scope..."></textarea>
+    </div>
+  </div>
+
+  <!-- ===== 17. PREVZATIE PROJEKTU ===== -->
+  <div class="card" id="s17">
+    <div class="card-header" onclick="toggle('s17')">
+      <span class="card-icon">🧭</span>
+      <div class="card-titles">
+        <div class="card-title">17. Prevzatie projektu bez pôvodného kódu</div>
+        <div class="card-sub">Dôležité pre nový web od nuly</div>
+      </div>
+      <button class="done-btn" onclick="markDone(event,'s17')" title="Hotové">✓</button>
+      <span class="chevron">▾</span>
+    </div>
+    <div class="card-body">
+      <div class="hint">Ak pôvodná firma neodovzdala kód, berieme to ako nový projekt. Tu si potvrď všetky prístupy, podklady a vlastníctvo.</div>
+
+      <span class="glabel">Status pôvodného projektu</span>
+      <div class="options">
+        <label class="opt">
+          <input type="radio" name="takeover_status" value="no_code">
+          <div class="opt-body">
+            <div class="opt-label">Kód nie je dostupný</div>
+            <div class="opt-desc">Realizácia pôjde ako nový web od nuly</div>
+          </div>
+        </label>
+        <label class="opt">
+          <input type="radio" name="takeover_status" value="partial">
+          <div class="opt-body">
+            <div class="opt-label">Časť podkladov je dostupná</div>
+            <div class="opt-desc">Napr. dizajn, texty alebo export dát, ale nie kompletný projekt</div>
+          </div>
+        </label>
+        <label class="opt">
+          <input type="radio" name="takeover_status" value="has_access">
+          <div class="opt-body">
+            <div class="opt-label">Prístupy sú dostupné</div>
+            <div class="opt-desc">Je možné analyzovať aktuálnu implementáciu pred odhadom</div>
+          </div>
+        </label>
+      </div>
+
+      <span class="glabel">Prístupy a vlastníctvo</span>
+      <div class="options grid-2">
+        <label class="opt">
+          <input type="checkbox">
+          <div class="opt-body"><div class="opt-label">Doména (registrátor)</div></div>
+        </label>
+        <label class="opt">
+          <input type="checkbox">
+          <div class="opt-body"><div class="opt-label">Hosting / server</div></div>
+        </label>
+        <label class="opt">
+          <input type="checkbox">
+          <div class="opt-body"><div class="opt-label">CMS admin prístup</div></div>
+        </label>
+        <label class="opt">
+          <input type="checkbox">
+          <div class="opt-body"><div class="opt-label">Databáza / export dát</div></div>
+        </label>
+        <label class="opt">
+          <input type="checkbox">
+          <div class="opt-body"><div class="opt-label">Google Analytics / Search Console</div></div>
+        </label>
+        <label class="opt">
+          <input type="checkbox">
+          <div class="opt-body"><div class="opt-label">Business manager / reklamné účty</div></div>
+        </label>
+      </div>
+
+      <span class="glabel">Čo treba prevziať alebo znovu vytvoriť</span>
+      <div class="options">
+        <label class="opt">
+          <input type="checkbox">
+          <div class="opt-body"><div class="opt-label">Texty stránok</div></div>
+        </label>
+        <label class="opt">
+          <input type="checkbox">
+          <div class="opt-body"><div class="opt-label">Fotky a vizualizácie</div></div>
+        </label>
+        <label class="opt">
+          <input type="checkbox">
+          <div class="opt-body"><div class="opt-label">Logo a brand assets</div></div>
+        </label>
+        <label class="opt">
+          <input type="checkbox">
+          <div class="opt-body"><div class="opt-label">Štruktúra stránok a URL</div></div>
+        </label>
+        <label class="opt">
+          <input type="checkbox">
+          <div class="opt-body"><div class="opt-label">Nehnuteľnosti a ich parametre</div></div>
+        </label>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Referenčné stránky, ktoré chce klient zachovať</label>
+        <textarea class="textarea" placeholder="napr. /graficky-navrh/, /grid-map/, /wdk-listing/... čo presne má zostať rovnaké a čo sa má zlepšiť"></textarea>
+      </div>
+
+      <div class="row-2">
+        <div class="field">
+          <label class="field-label">Kto je vlastník účtov a prístupov?</label>
+          <input type="text" class="text-input" placeholder="napr. majiteľ firmy, marketing, externá agentúra...">
+        </div>
+        <div class="field">
+          <label class="field-label">Termín dodania podkladov</label>
+          <input type="date" class="date-input">
+        </div>
+      </div>
+
+      <div class="notes-label">📝 Riziká a otvorené body</div>
+      <textarea class="textarea" placeholder="Čo chýba, čo blokuje odhad, čo treba preveriť po stretnutí..."></textarea>
+    </div>
+  </div>
+
+  <!-- ===== PREDBEŽNÁ CENOVÁ PONUKA ===== -->
+  <div class="price-card" id="price-card">
+    <div class="price-card-header">
+      <div>
+        <div class="price-card-title">💶 Predbežná cenová ponuka</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:3px">Aktualizuje sa automaticky podľa výberu</div>
+      </div>
+      <div class="price-total-wrap">
+        <div class="price-total" id="price-total-val">—</div>
+        <div class="price-total-label">orientačná cena celkom</div>
+      </div>
+    </div>
+    <div class="price-rows" id="price-rows">
+      <div class="price-empty">Vyberte balík v sekcii 16 — cena sa vypočíta automaticky.</div>
+    </div>
+    <div class="price-note">* Predbežná cena bez DPH. Finálna cena závisí od vybraných položiek, rozsahu a podkladov klienta.</div>
+  </div>
+
+  <!-- ===== ZÁVEREČNÁ VETA ===== -->
+  <div class="closing">
+    <div class="closing-label">🔥 Záverečná veta na stretnutí</div>
+    <p>„Na základe toho pripravím finálny návrh štruktúry a pošlem vám to na odsúhlasenie, aby sme išli správnym smerom."</p>
+    <small>Ďakujem za váš čas — pripravím vám konkrétny návrh v najkratšom možnom čase.</small>
+  </div>
+
+</main>
+
+<!-- ===== BOTTOM BAR ===== -->
+<div class="bottom-bar">
+  <button class="btn btn-ghost" onclick="resetAll()">↺ Reset</button>
+  <button class="btn btn-ghost" onclick="exportPDF()">⬇ PDF</button>
+  <button class="btn btn-primary" onclick="window.print()">🖨️ Tlačiť</button>
+</div>
+
+<script>
+  // Set today's date
+  const d = new Date();
+  document.getElementById('header-date').textContent =
+    d.toLocaleDateString('sk-SK', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+
+  // Toggle section open/close
+  function toggle(id) {
+    document.getElementById(id).classList.toggle('is-open');
+  }
+
+  // Mark section as done
+  function markDone(e, id) {
+    e.stopPropagation();
+    const card = document.getElementById(id);
+    const btn = card.querySelector('.done-btn');
+    card.classList.toggle('is-done');
+    btn.classList.toggle('is-done');
+    updateProgress();
+    save();
+  }
+
+  // Progress bar
+  function updateProgress() {
+    const total = 19;
+    const done = document.querySelectorAll('.done-btn.is-done').length;
+    document.getElementById('prog-fill').style.width = (done / total * 100) + '%';
+    document.getElementById('prog-label').textContent = done + ' / ' + total + ' otázok zodpovedaných';
+  }
+
+  // ---- LocalStorage persistence ----
+  function save() {
+    const state = {};
+    document.querySelectorAll('.card').forEach(c => {
+      state[c.id + '_done'] = c.classList.contains('is-done');
+      state[c.id + '_open'] = c.classList.contains('is-open');
+    });
+    document.querySelectorAll('input[type=radio],input[type=checkbox]').forEach((el, i) => {
+      state['chk' + i] = el.checked;
+    });
+    document.querySelectorAll('input[type=text],input[type=number],input[type=date],textarea').forEach((el, i) => {
+      state['val' + i] = el.value;
+    });
+    try { localStorage.setItem('mf_v2', JSON.stringify(state)); } catch(e){}
+  }
+
+  function load() {
+    let state;
+    try { state = JSON.parse(localStorage.getItem('mf_v2')); } catch(e){}
+    if (!state) return;
+    document.querySelectorAll('.card').forEach(c => {
+      if (state[c.id + '_done']) { c.classList.add('is-done'); c.querySelector('.done-btn').classList.add('is-done'); }
+      if (state[c.id + '_open'] === true)  c.classList.add('is-open');
+      if (state[c.id + '_open'] === false) c.classList.remove('is-open');
+    });
+    document.querySelectorAll('input[type=radio],input[type=checkbox]').forEach((el, i) => {
+      if (state['chk' + i] !== undefined) el.checked = state['chk' + i];
+    });
+    document.querySelectorAll('input[type=text],input[type=number],input[type=date],textarea').forEach((el, i) => {
+      if (state['val' + i] !== undefined) el.value = state['val' + i];
+    });
+    updateProgress();
+  }
+
+  // ---- Price calculator ----
+  function calcPrice() {
+    const rows = [];
+    let totalMin = 0, totalMax = 0;
+
+    // Package (radio) — base price
+    const pkg = document.querySelector('input[name="package"]:checked');
+    const isPremium = pkg && pkg.value === 'premium';
+    if (pkg && pkg.dataset.priceMin) {
+      const mn = +pkg.dataset.priceMin, mx = +pkg.dataset.priceMax;
+      rows.push({ label: pkg.dataset.priceLabel, min: mn, max: mx, base: true });
+      totalMin += mn; totalMax += mx;
+    }
+
+    // Interactive map — included in Premium, extra cost otherwise
+    const map = document.querySelector('input[name="map_type"]:checked');
+    if (map && map.value === 'interactive') {
+      if (isPremium) {
+        rows.push({ label: 'Klikateľná mapa ✔ zahrnutá v Premium', min: 0, max: 0, included: true });
+      } else {
+        rows.push({ label: 'Klikateľná mapa s bytmi', min: 300, max: 500 });
+        totalMin += 300; totalMax += 500;
+      }
+    }
+
+    // New design
+    const design = document.querySelector('input[name="design_attitude"]:checked');
+    if (design && design.dataset.priceMin) {
+      const mn = +design.dataset.priceMin, mx = +design.dataset.priceMax;
+      rows.push({ label: design.dataset.priceLabel, min: mn, max: mx });
+      totalMin += mn; totalMax += mx;
+    }
+
+    // All checkboxes with data-price-min
+    document.querySelectorAll('input[type=checkbox][data-price-min]:checked').forEach(el => {
+      const mn = +el.dataset.priceMin, mx = +el.dataset.priceMax;
+      // Skip items included in the selected package
+      if (el.dataset.priceIncludedIn === 'premium' && isPremium) {
+        rows.push({ label: el.dataset.priceLabel + ' ✔ zahrnuté v Premium', min: 0, max: 0, included: true });
+        return;
+      }
+      rows.push({ label: el.dataset.priceLabel, min: mn, max: mx });
+      totalMin += mn; totalMax += mx;
+    });
+
+    // Render
+    const rowsEl = document.getElementById('price-rows');
+    const totalEl = document.getElementById('price-total-val');
+
+    if (rows.length === 0) {
+      rowsEl.innerHTML = '<div class="price-empty">Vyberte balík v sekcii 16 — cena sa vypočíta automaticky.</div>';
+      totalEl.textContent = '—';
+      return;
+    }
+
+    rowsEl.innerHTML = rows.map(r => {
+      if (r.included) return `<div class="price-row price-row-included">
+        <span class="price-row-name">${r.label}</span>
+        <span class="price-row-val">✔ zahrnuté</span>
+      </div>`;
+      return `<div class="price-row${r.base ? ' price-row-base' : ''}">
+        <span class="price-row-name">${r.label}</span>
+        <span class="price-row-val">${r.min.toLocaleString('sk-SK')} – ${r.max.toLocaleString('sk-SK')} €</span>
+      </div>`;
+    }).join('') +
+    `<hr class="price-divider">
+     <div class="price-row price-row-base">
+       <span class="price-row-name" style="font-weight:700">CELKOM orientačne</span>
+       <span class="price-row-val" style="font-size:15px">${totalMin.toLocaleString('sk-SK')} – ${totalMax.toLocaleString('sk-SK')} €</span>
+     </div>`;
+
+    totalEl.textContent = `${totalMin.toLocaleString('sk-SK')} – ${totalMax.toLocaleString('sk-SK')} €`;
+  }
+
+  async function ensureHtml2Pdf() {
+    if (window.html2pdf) return true;
+
+    const tryLoad = (src) => new Promise(resolve => {
+      const s = document.createElement('script');
+      s.src = src;
+      s.async = true;
+      s.onload = () => resolve(true);
+      s.onerror = () => resolve(false);
+      document.head.appendChild(s);
+    });
+
+    const sources = [
+      'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js',
+      'https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js',
+      'https://unpkg.com/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js'
+    ];
+
+    for (let i = 0; i < sources.length; i++) {
+      const ok = await tryLoad(sources[i]);
+      if (ok && window.html2pdf) return true;
+    }
+    return false;
+  }
+
+  async function exportPDF() {
+    const hasLib = await ensureHtml2Pdf();
+    if (!hasLib) {
+      alert('PDF kniznica sa nepodarilo nacitat. Skus internet pripojenie, alebo pouzi Tlacit -> Ulozit ako PDF.');
+      return;
+    }
+
+    const nameInput = document.querySelector('#s0 input[type=text]');
+    const clientName = (nameInput && nameInput.value.trim()) ? nameInput.value.trim() : 'klient';
+    const dateStr = new Date().toISOString().slice(0,10);
+    const filename = `stretnutie-${clientName.toLowerCase().replace(/\s+/g,'-')}-${dateStr}.pdf`;
+
+    let html = `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:11.5px;color:#111;padding:0;line-height:1.45">`;
+    html += `<h2 style="color:#7a5f30;border-bottom:2px solid #c9a96e;padding-bottom:6px;margin:0 0 14px">Stretnutie s klientom — ${clientName}</h2>`;
+    html += `<div style="font-size:10px;color:#888;margin-bottom:16px">${new Date().toLocaleDateString('sk-SK',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}</div>`;
+
+    document.querySelectorAll('.card').forEach(card => {
+      const titleEl = card.querySelector('.card-title');
+      if (!titleEl) return;
+      const title = titleEl.textContent.trim();
+
+      const selected = [];
+      card.querySelectorAll('input[type=radio]:checked, input[type=checkbox]:checked').forEach(inp => {
+        const opt = inp.closest('.opt');
+        const optLabel = opt ? opt.querySelector('.opt-label') : null;
+        if (optLabel) {
+          // strip badge text
+          const clone = optLabel.cloneNode(true);
+          clone.querySelectorAll('.badge').forEach(b => b.remove());
+          const text = clone.textContent.trim();
+          if (text) selected.push(text);
+        }
+      });
+
+      const inputs = [];
+      card.querySelectorAll('input[type=text],input[type=number],input[type=date]').forEach(inp => {
+        if (!inp.value.trim()) return;
+        const fld = inp.closest('.field');
+        const lbl = fld ? fld.querySelector('.field-label') : null;
+        inputs.push({ label: lbl ? lbl.textContent.trim() : '', value: inp.value.trim() });
+      });
+
+      const notes = [];
+      card.querySelectorAll('textarea').forEach(ta => {
+        if (ta.value.trim()) notes.push(ta.value.trim());
+      });
+
+      if (selected.length === 0 && inputs.length === 0 && notes.length === 0) return;
+
+      html += `<div style="margin-bottom:9px;page-break-inside:avoid">`;
+      html += `<div style="font-weight:700;font-size:12px;background:#fdf6e3;padding:4px 10px;border-left:3px solid #c9a96e;margin-bottom:4px">${title}</div>`;
+
+      if (selected.length > 0) {
+        html += `<div style="padding:0 10px">`;
+        selected.forEach(s => { html += `<div style="padding:1px 0">✓ ${s}</div>`; });
+        html += `</div>`;
+      }
+      if (inputs.length > 0) {
+        html += `<div style="padding:1px 10px">`;
+        inputs.forEach(f => {
+          html += `<div style="padding:1px 0"><span style="color:#888">${f.label ? f.label + ': ' : ''}</span>${f.value}</div>`;
+        });
+        html += `</div>`;
+      }
+      if (notes.length > 0) {
+        notes.forEach(n => {
+          html += `<div style="padding:1px 10px 3px;color:#555;font-style:italic;border-left:2px solid #eee;margin:3px 10px 0">${n.replace(/\n/g,'<br>')}</div>`;
+        });
+      }
+
+      html += `</div>`;
+    });
+
+    // Price summary
+    const totalEl = document.getElementById('price-total-val');
+    const total = totalEl ? totalEl.textContent.trim() : '';
+    if (total && total !== '—') {
+      const priceRows = document.querySelectorAll('#price-rows .price-row');
+      html += `<div style="margin-top:14px;border:2px solid #c9a96e;padding:10px 14px;border-radius:6px;page-break-inside:avoid">`;
+      html += `<div style="font-weight:700;font-size:12px;color:#7a5f30;margin-bottom:6px">💶 Orientačná cenová ponuka</div>`;
+      priceRows.forEach(row => {
+        const nameEl = row.querySelector('.price-row-name');
+        const valEl = row.querySelector('.price-row-val');
+        const name = nameEl ? nameEl.textContent.trim() : '';
+        const val  = valEl ? valEl.textContent.trim() : '';
+        if (name && val) html += `<div style="display:flex;justify-content:space-between;padding:2px 0;border-bottom:1px solid #f0e8d8"><span>${name}</span><span style="font-weight:600">${val}</span></div>`;
+      });
+      html += `<div style="margin-top:6px;font-size:10px;color:#888">* Orientačná cena bez DPH. Finálna cena závisí od vybraných položiek, rozsahu a podkladov klienta.</div>`;
+      html += `</div>`;
+    }
+
+    html += `</div>`;
+
+    const wrap = document.createElement('div');
+    wrap.innerHTML = html;
+    wrap.style.cssText = 'position:absolute;left:-9999px;top:0';
+    document.body.appendChild(wrap);
+
+    try {
+      await html2pdf().set({
+        margin: [10, 10, 10, 10],
+        filename,
+        image: { type: 'jpeg', quality: 0.97 },
+        html2canvas: { scale: 2, useCORS: true, logging: false, letterRendering: true },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['css', 'legacy'] }
+      }).from(wrap.firstChild).save();
+    } catch (err) {
+      console.error('PDF export failed', err);
+      alert('PDF sa nepodarilo vygenerovat. Skus Tlacit -> Ulozit ako PDF.');
+    } finally {
+      document.body.removeChild(wrap);
+    }
+  }
+
+  function resetAll() {
+    if (!confirm('Naozaj chceš vymazať všetky odpovede a začať odznova?')) return;
+    try { localStorage.removeItem('mf_v2'); } catch(e){}
+    location.reload();
+  }
+
+  // Auto-save + recalc on any interaction
+  document.addEventListener('change', () => { save(); calcPrice(); });
+  document.addEventListener('input', save);
+
+  // Boot
+  load();
+  updateProgress();
+  calcPrice();
+</script>
+</body>
+</html>
