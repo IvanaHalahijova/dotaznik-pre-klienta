@@ -2117,9 +2117,33 @@
   }
 
   async function exportPDF() {
-    const hasLib = await ensureHtml2Pdf();
-    if (!hasLib) {
-      alert('PDF kniznica sa nepodarilo nacitat. Skus internet pripojenie, alebo pouzi Tlacit -> Ulozit ako PDF.');
+    const ensureJsPdf = async () => {
+      if (window.jspdf && window.jspdf.jsPDF) return true;
+
+      const tryLoad = (src) => new Promise(resolve => {
+        const s = document.createElement('script');
+        s.src = src;
+        s.async = true;
+        s.onload = () => resolve(true);
+        s.onerror = () => resolve(false);
+        document.head.appendChild(s);
+      });
+
+      const sources = [
+        'https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js',
+        'https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js'
+      ];
+
+      for (let i = 0; i < sources.length; i++) {
+        const ok = await tryLoad(sources[i]);
+        if (ok && window.jspdf && window.jspdf.jsPDF) return true;
+      }
+      return false;
+    };
+
+    const hasPdfEngine = await ensureJsPdf();
+    if (!hasPdfEngine) {
+      alert('PDF kniznica sa nepodarilo nacitat. Skus Tlacit -> Ulozit ako PDF.');
       return;
     }
 
@@ -2128,131 +2152,111 @@
     const dateStr = new Date().toISOString().slice(0,10);
     const filename = `stretnutie-${clientName.toLowerCase().replace(/\s+/g,'-')}-${dateStr}.pdf`;
 
-    let html = `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:11.5px;color:#111;padding:0;line-height:1.45">`;
-    html += `<h2 style="color:#7a5f30;border-bottom:2px solid #c9a96e;padding-bottom:6px;margin:0 0 14px">Stretnutie s klientom — ${clientName}</h2>`;
-    html += `<div style="font-size:10px;color:#888;margin-bottom:16px">${new Date().toLocaleDateString('sk-SK',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}</div>`;
-
+    const sections = [];
     document.querySelectorAll('.card').forEach(card => {
       const titleEl = card.querySelector('.card-title');
       if (!titleEl) return;
-      const title = titleEl.textContent.trim();
 
       const selected = [];
       card.querySelectorAll('input[type=radio]:checked, input[type=checkbox]:checked').forEach(inp => {
         const opt = inp.closest('.opt');
         const optLabel = opt ? opt.querySelector('.opt-label') : null;
-        if (optLabel) {
-          // strip badge text
-          const clone = optLabel.cloneNode(true);
-          clone.querySelectorAll('.badge').forEach(b => b.remove());
-          const text = clone.textContent.trim();
-          if (text) selected.push(text);
-        }
+        if (!optLabel) return;
+        const clone = optLabel.cloneNode(true);
+        clone.querySelectorAll('.badge').forEach(b => b.remove());
+        const txt = clone.textContent.trim();
+        if (txt) selected.push(txt);
       });
 
       const inputs = [];
       card.querySelectorAll('input[type=text],input[type=number],input[type=date]').forEach(inp => {
-        if (!inp.value.trim()) return;
+        const value = inp.value.trim();
+        if (!value) return;
         const fld = inp.closest('.field');
         const lbl = fld ? fld.querySelector('.field-label') : null;
-        inputs.push({ label: lbl ? lbl.textContent.trim() : '', value: inp.value.trim() });
+        inputs.push((lbl ? lbl.textContent.trim() + ': ' : '') + value);
       });
 
       const notes = [];
       card.querySelectorAll('textarea').forEach(ta => {
-        if (ta.value.trim()) notes.push(ta.value.trim());
+        const value = ta.value.trim();
+        if (value) notes.push(value);
       });
 
-      if (selected.length === 0 && inputs.length === 0 && notes.length === 0) return;
-
-      html += `<div style="margin-bottom:9px;page-break-inside:avoid">`;
-      html += `<div style="font-weight:700;font-size:12px;background:#fdf6e3;padding:4px 10px;border-left:3px solid #c9a96e;margin-bottom:4px">${title}</div>`;
-
-      if (selected.length > 0) {
-        html += `<div style="padding:0 10px">`;
-        selected.forEach(s => { html += `<div style="padding:1px 0">✓ ${s}</div>`; });
-        html += `</div>`;
-      }
-      if (inputs.length > 0) {
-        html += `<div style="padding:1px 10px">`;
-        inputs.forEach(f => {
-          html += `<div style="padding:1px 0"><span style="color:#888">${f.label ? f.label + ': ' : ''}</span>${f.value}</div>`;
-        });
-        html += `</div>`;
-      }
-      if (notes.length > 0) {
-        notes.forEach(n => {
-          html += `<div style="padding:1px 10px 3px;color:#555;font-style:italic;border-left:2px solid #eee;margin:3px 10px 0">${n.replace(/\n/g,'<br>')}</div>`;
+      if (selected.length || inputs.length || notes.length) {
+        sections.push({
+          title: titleEl.textContent.trim(),
+          selected,
+          inputs,
+          notes
         });
       }
-
-      html += `</div>`;
     });
 
-    // Price summary
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+    const left = 42;
+    const right = pageW - 42;
+    const width = right - left;
+    let y = 44;
+
+    const ensureSpace = (h) => {
+      if (y + h > pageH - 42) {
+        doc.addPage();
+        y = 44;
+      }
+    };
+
+    const writeWrapped = (text, size = 11, style = 'normal', color = [20,20,20], gap = 5) => {
+      doc.setFont('helvetica', style);
+      doc.setFontSize(size);
+      doc.setTextColor(color[0], color[1], color[2]);
+      const lines = doc.splitTextToSize(String(text), width);
+      const lineH = Math.max(14, size + 3);
+      ensureSpace(lines.length * lineH + gap);
+      doc.text(lines, left, y);
+      y += lines.length * lineH + gap;
+    };
+
+    writeWrapped(`Stretnutie s klientom - ${clientName}`, 16, 'bold', [60,45,20], 4);
+    writeWrapped(new Date().toLocaleDateString('sk-SK', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }), 10, 'normal', [120,120,120], 12);
+
+    if (!sections.length) {
+      writeWrapped('V dotazniku nie su vyplnene odpovede.', 12, 'italic', [110,110,110], 0);
+    }
+
+    sections.forEach(sec => {
+      ensureSpace(24);
+      writeWrapped(sec.title, 12, 'bold', [122,95,48], 2);
+
+      sec.selected.forEach(item => writeWrapped(`• ${item}`, 11, 'normal', [25,25,25], 1));
+      sec.inputs.forEach(item => writeWrapped(`- ${item}`, 10.5, 'normal', [80,80,80], 1));
+      sec.notes.forEach(note => {
+        writeWrapped('Poznámka:', 10.5, 'bold', [90,90,90], 0);
+        writeWrapped(note, 10.5, 'italic', [90,90,90], 2);
+      });
+
+      y += 4;
+    });
+
     const totalEl = document.getElementById('price-total-val');
     const total = totalEl ? totalEl.textContent.trim() : '';
     if (total && total !== '—') {
-      const priceRows = document.querySelectorAll('#price-rows .price-row');
-      html += `<div style="margin-top:14px;border:2px solid #c9a96e;padding:10px 14px;border-radius:6px;page-break-inside:avoid">`;
-      html += `<div style="font-weight:700;font-size:12px;color:#7a5f30;margin-bottom:6px">💶 Orientačná cenová ponuka</div>`;
-      priceRows.forEach(row => {
-        const nameEl = row.querySelector('.price-row-name');
-        const valEl = row.querySelector('.price-row-val');
-        const name = nameEl ? nameEl.textContent.trim() : '';
-        const val  = valEl ? valEl.textContent.trim() : '';
-        if (name && val) html += `<div style="display:flex;justify-content:space-between;padding:2px 0;border-bottom:1px solid #f0e8d8"><span>${name}</span><span style="font-weight:600">${val}</span></div>`;
+      ensureSpace(30);
+      writeWrapped('Orientačná cenová ponuka', 12, 'bold', [122,95,48], 2);
+      document.querySelectorAll('#price-rows .price-row').forEach(row => {
+        const n = row.querySelector('.price-row-name');
+        const v = row.querySelector('.price-row-val');
+        const name = n ? n.textContent.trim() : '';
+        const val = v ? v.textContent.trim() : '';
+        if (name && val) writeWrapped(`- ${name}: ${val}`, 10.5, 'normal', [30,30,30], 1);
       });
-      html += `<div style="margin-top:6px;font-size:10px;color:#888">* Orientačná cena bez DPH. Finálna cena závisí od vybraných položiek, rozsahu a podkladov klienta.</div>`;
-      html += `</div>`;
+      writeWrapped('* Orientacna cena bez DPH. Finalna cena zavisi od vybranych poloziek, rozsahu a podkladov klienta.', 9.5, 'italic', [120,120,120], 0);
     }
 
-    html += `</div>`;
-
-    // Render on-screen (but visually hidden) for better browser compatibility.
-    const renderRoot = document.createElement('div');
-    renderRoot.innerHTML = html;
-    renderRoot.style.cssText = [
-      'position:fixed',
-      'left:0',
-      'top:0',
-      'width:794px',
-      'max-width:794px',
-      'background:#fff',
-      'color:#111',
-      'opacity:0.01',
-      'pointer-events:none',
-      'z-index:-1'
-    ].join(';');
-    document.body.appendChild(renderRoot);
-
-    // Ensure layout is fully settled before html2canvas snapshot.
-    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-
-    try {
-      await html2pdf().set({
-        margin: [10, 10, 10, 10],
-        filename,
-        image: { type: 'jpeg', quality: 0.97 },
-        html2canvas: {
-          scale: 2,
-          useCORS: true,
-          logging: false,
-          letterRendering: true,
-          scrollX: 0,
-          scrollY: 0,
-          windowWidth: renderRoot.scrollWidth,
-          windowHeight: renderRoot.scrollHeight
-        },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-        pagebreak: { mode: ['css'] }
-      }).from(renderRoot).save();
-    } catch (err) {
-      console.error('PDF export failed', err);
-      alert('PDF sa nepodarilo vygenerovat. Skus Tlacit -> Ulozit ako PDF.');
-    } finally {
-      document.body.removeChild(renderRoot);
-    }
+    doc.save(filename);
   }
 
   function resetAll() {
