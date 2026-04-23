@@ -2209,25 +2209,49 @@
 
     html += `</div>`;
 
-    const wrap = document.createElement('div');
-    wrap.innerHTML = html;
-    wrap.style.cssText = 'position:absolute;left:-9999px;top:0';
-    document.body.appendChild(wrap);
+    // Render on-screen (but visually hidden) for better browser compatibility.
+    const renderRoot = document.createElement('div');
+    renderRoot.innerHTML = html;
+    renderRoot.style.cssText = [
+      'position:fixed',
+      'left:0',
+      'top:0',
+      'width:794px',
+      'max-width:794px',
+      'background:#fff',
+      'color:#111',
+      'opacity:0.01',
+      'pointer-events:none',
+      'z-index:-1'
+    ].join(';');
+    document.body.appendChild(renderRoot);
+
+    // Ensure layout is fully settled before html2canvas snapshot.
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 
     try {
       await html2pdf().set({
         margin: [10, 10, 10, 10],
         filename,
         image: { type: 'jpeg', quality: 0.97 },
-        html2canvas: { scale: 2, useCORS: true, logging: false, letterRendering: true },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          letterRendering: true,
+          scrollX: 0,
+          scrollY: 0,
+          windowWidth: renderRoot.scrollWidth,
+          windowHeight: renderRoot.scrollHeight
+        },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-        pagebreak: { mode: ['css', 'legacy'] }
-      }).from(wrap.firstChild).save();
+        pagebreak: { mode: ['css'] }
+      }).from(renderRoot).save();
     } catch (err) {
       console.error('PDF export failed', err);
       alert('PDF sa nepodarilo vygenerovat. Skus Tlacit -> Ulozit ako PDF.');
     } finally {
-      document.body.removeChild(wrap);
+      document.body.removeChild(renderRoot);
     }
   }
 
