@@ -22,7 +22,8 @@
   <link rel="canonical" href="https://ivanahalahijova.github.io/dotaznik-pre-klienta/">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
-  <link rel="apple-touch-icon" href="./icon.svg">
+  <link rel="icon" href="./icon-192.png" sizes="192x192" type="image/png">
+  <link rel="apple-touch-icon" href="./icon-192.png">
   <style>
     :root {
       --bg: #0d0d0d;
@@ -316,6 +317,7 @@
     .btn:active { opacity: .7; }
     .btn-primary { background: var(--gold); color: #0d0d0d; }
     .btn-ghost   { background: var(--surface2); color: var(--text); border: 1px solid var(--border); flex: 0 0 auto; padding: 15px 18px; }
+    #install-app-btn[hidden] { display: none !important; }
 
     /* ===== PRICE CARD ===== */
     .price-card {
@@ -1844,11 +1846,59 @@
 <!-- ===== BOTTOM BAR ===== -->
 <div class="bottom-bar">
   <button class="btn btn-ghost" onclick="resetAll()">↺ Reset</button>
+  <button class="btn btn-ghost" id="install-app-btn" hidden>＋ App</button>
   <button class="btn btn-ghost" onclick="exportPDF()">⬇ PDF</button>
   <button class="btn btn-primary" onclick="window.print()">🖨️ Tlačiť</button>
 </div>
 
 <script>
+  let deferredInstallPrompt = null;
+
+  // Register service worker for installability on Android/Chrome.
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js').catch(() => {});
+    });
+  }
+
+  // Capture PWA install prompt when browser deems app installable.
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+    const btn = document.getElementById('install-app-btn');
+    if (btn) btn.hidden = false;
+  });
+
+  // Hide install button once installed.
+  window.addEventListener('appinstalled', () => {
+    deferredInstallPrompt = null;
+    const btn = document.getElementById('install-app-btn');
+    if (btn) btn.hidden = true;
+  });
+
+  function showInstallHelp() {
+    const ua = navigator.userAgent || '';
+    const isiOS = /iPhone|iPad|iPod/.test(ua);
+    if (isiOS) {
+      alert('Na iPhone otvor stranku v Safari a daj Zdielat -> Pridat na plochu. V in-app browseri (Messenger/Instagram) to casto nie je dostupne.');
+      return;
+    }
+    alert('Ak sa tlacidlo App nezobrazuje, otvor menu prehliadaca a daj Instalovat aplikaciu alebo Pridat na plochu.');
+  }
+
+  function installApp() {
+    if (!deferredInstallPrompt) {
+      showInstallHelp();
+      return;
+    }
+    deferredInstallPrompt.prompt();
+    deferredInstallPrompt.userChoice.finally(() => {
+      deferredInstallPrompt = null;
+      const btn = document.getElementById('install-app-btn');
+      if (btn) btn.hidden = true;
+    });
+  }
+
   // Set today's date
   const d = new Date();
   document.getElementById('header-date').textContent =
@@ -2135,6 +2185,7 @@
   // Auto-save + recalc on any interaction
   document.addEventListener('change', () => { save(); calcPrice(); });
   document.addEventListener('input', save);
+  document.getElementById('install-app-btn')?.addEventListener('click', installApp);
 
   // Boot
   load();
